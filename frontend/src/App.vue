@@ -113,6 +113,9 @@ export default {
     },
     
     async submitForm() {
+      if (!this.validateForm()) {
+        return
+      }
       try {
         if (this.isEdit) {
           await userApi.updateUser(this.formData.id, this.formData)
@@ -128,9 +131,16 @@ export default {
     
     validateForm() {
       if (!this.formData.name || this.formData.name.trim() === '') {
+        alert('姓名不能为空')
         return false
       }
-      if (this.formData.agee < 0) {
+      if (this.formData.age < 0 || this.formData.age > 150) {
+        alert('年龄必须在0-150之间')
+        return false
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(this.formData.email)) {
+        alert('请输入有效的邮箱地址')
         return false
       }
       return true
@@ -147,13 +157,7 @@ export default {
       }
     },
     
-    async batchDelete() {
-      const selectedIds = this.selectedUsers
-      for (let i = 0; i < selectedIds.length; i++) {
-        await userApi.deleteUser(selectedIds[i])
-      }
-      this.loadUsers()
-    }
+
   }
 }
 </script>

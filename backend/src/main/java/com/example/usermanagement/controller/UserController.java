@@ -41,6 +41,15 @@ public class UserController {
 
     @PostMapping
     public User createUser(@RequestBody User user) {
+        if (!isValidEmail(user.getEmail())) {
+            throw new IllegalArgumentException("无效的邮箱地址");
+        }
+        if (user.getAge() < 0 || user.getAge() > 150) {
+            throw new IllegalArgumentException("年龄必须在0-150之间");
+        }
+        if (user.getName() == null || user.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("姓名不能为空");
+        }
         List<User> users = jsonFileUtil.readUsers();
         Long maxId = users.stream()
                 .mapToLong(User::getId)
@@ -58,11 +67,20 @@ public class UserController {
 
     @PutMapping("/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        if (!isValidEmail(userDetails.getEmail())) {
+            throw new IllegalArgumentException("无效的邮箱地址");
+        }
+        if (userDetails.getAge() < 0 || userDetails.getAge() > 150) {
+            throw new IllegalArgumentException("年龄必须在0-150之间");
+        }
+        if (userDetails.getName() == null || userDetails.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("姓名不能为空");
+        }
         List<User> users = jsonFileUtil.readUsers();
         Optional<User> userOptional = users.stream()
                 .filter(u -> u.getId().equals(id))
                 .findFirst();
-        
+
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             user.setName(userDetails.getName());
