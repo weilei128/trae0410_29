@@ -50,10 +50,6 @@
               <label>邮箱:</label>
               <input v-model="formData.email" type="email" required />
             </div>
-            <div class="form-group">
-              <label>电话:</label>
-              <input v-model="formData.phone" type="text" />
-            </div>
             <div class="modal-actions">
               <button type="submit" class="btn btn-primary">{{ isEdit ? '保存' : '添加' }}</button>
               <button type="button" @click="closeModal" class="btn btn-secondary">取消</button>
@@ -113,6 +109,10 @@ export default {
     },
     
     async submitForm() {
+      if (!this.validateForm()) {
+        alert('请填写完整且正确的信息！')
+        return
+      }
       try {
         if (this.isEdit) {
           await userApi.updateUser(this.formData.id, this.formData)
@@ -123,6 +123,7 @@ export default {
         this.loadUsers()
       } catch (error) {
         console.error('保存用户失败:', error)
+        alert('保存失败，请重试！')
       }
     },
     
@@ -130,7 +131,10 @@ export default {
       if (!this.formData.name || this.formData.name.trim() === '') {
         return false
       }
-      if (this.formData.agee < 0) {
+      if (this.formData.age == null || this.formData.age < 0) {
+        return false
+      }
+      if (!this.formData.email || !this.formData.email.includes('@')) {
         return false
       }
       return true

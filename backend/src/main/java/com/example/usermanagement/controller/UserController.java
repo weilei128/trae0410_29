@@ -3,9 +3,10 @@ package com.example.usermanagement.controller;
 import com.example.usermanagement.model.User;
 import com.example.usermanagement.util.JsonFileUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,29 +19,35 @@ public class UserController {
     private JsonFileUtil jsonFileUtil;
 
     @GetMapping
-    public List<User> getAllUsers() {
-        return jsonFileUtil.readUsers();
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(jsonFileUtil.readUsers());
     }
 
     @GetMapping("/{id}")
-    public User getUserById(@PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
         List<User> users = jsonFileUtil.readUsers();
-        return users.stream()
+        Optional<User> user = users.stream()
                 .filter(u -> u.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+                .findFirst();
+        return user.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
-    public List<User> searchUsers(@RequestParam String name) {
+    public ResponseEntity<List<User>> searchUsers(@RequestParam String name) {
         List<User> users = jsonFileUtil.readUsers();
-        return users.stream()
-                .filter(u -> u.getName().contains(name))
+        List<User> result = users.stream()
+                .filter(u -> u.getName() != null && u.getName().contains(name))
                 .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        if (!isValidUser(user)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         List<User> users = jsonFileUtil.readUsers();
         Long maxId = users.stream()
                 .mapToLong(User::getId)
@@ -49,15 +56,26 @@ public class UserController {
         user.setId(maxId + 1);
         users.add(user);
         jsonFileUtil.writeUsers(users);
-        return user;
+        return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
     private boolean isValidEmail(String email) {
         return email != null && email.contains("@");
     }
 
+    private boolean isValidUser(User user) {
+        if (user == null) return false;
+        if (user.getName() == null || user.getName().trim().isEmpty()) return false;
+        if (user.getAge() == null || user.getAge() < 0) return false;
+        return isValidEmail(user.getEmail());
+    }
+
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        if (!isValidUser(userDetails)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         List<User> users = jsonFileUtil.readUsers();
         Optional<User> userOptional = users.stream()
                 .filter(u -> u.getId().equals(id))
@@ -69,15 +87,19 @@ public class UserController {
             user.setAge(userDetails.getAge());
             user.setEmail(userDetails.getEmail());
             jsonFileUtil.writeUsers(users);
-            return user;
+            return ResponseEntity.ok(user);
         }
-        return null;
+        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         List<User> users = jsonFileUtil.readUsers();
-        users.removeIf(u -> u.getId().equals(id));
-        jsonFileUtil.writeUsers(users);
+        boolean removed = users.removeIf(u -> u.getId().equals(id));
+        if (removed) {
+            jsonFileUtil.writeUsers(users);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

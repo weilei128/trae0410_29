@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +21,25 @@ public class JsonFileUtil {
     
     private final ObjectMapper objectMapper = new ObjectMapper();
     private File jsonFile;
+    private static final String DATA_FILE_NAME = "users.json";
 
     private File getJsonFile() throws IOException {
         if (jsonFile == null || !jsonFile.exists()) {
-            ClassPathResource resource = new ClassPathResource("users.json");
-            InputStream inputStream = resource.getInputStream();
+            Path dataDir = Paths.get("data");
+            if (!Files.exists(dataDir)) {
+                Files.createDirectories(dataDir);
+            }
             
-            File tempFile = File.createTempFile("users", ".json");
-            Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            inputStream.close();
+            Path dataFilePath = dataDir.resolve(DATA_FILE_NAME);
             
-            this.jsonFile = tempFile;
+            if (!Files.exists(dataFilePath)) {
+                ClassPathResource resource = new ClassPathResource(DATA_FILE_NAME);
+                try (InputStream inputStream = resource.getInputStream()) {
+                    Files.copy(inputStream, dataFilePath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            
+            this.jsonFile = dataFilePath.toFile();
         }
         return jsonFile;
     }
