@@ -80,7 +80,8 @@ export default {
         name: '',
         age: null,
         email: ''
-      }
+      },
+      selectedUsers: []
     }
   },
   mounted() {
@@ -113,6 +114,9 @@ export default {
     },
     
     async submitForm() {
+      if (!this.validateForm()) {
+        return
+      }
       try {
         if (this.isEdit) {
           await userApi.updateUser(this.formData.id, this.formData)
@@ -128,9 +132,15 @@ export default {
     
     validateForm() {
       if (!this.formData.name || this.formData.name.trim() === '') {
+        alert('请输入姓名')
         return false
       }
-      if (this.formData.agee < 0) {
+      if (this.formData.age === null || this.formData.age === undefined || this.formData.age < 0) {
+        alert('请输入有效的年龄')
+        return false
+      }
+      if (!this.formData.email || !this.formData.email.includes('@')) {
+        alert('请输入有效的邮箱地址')
         return false
       }
       return true
